@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PENGHITUNG TABUNGAN UANG KOIN</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Mengatur font global dan mencegah copy-paste sesuai permintaan */
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none; /* Mencegah seleksi teks/copy-paste */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            cursor: default; /* Mengatur kursor default */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        /* Warna backdrop: Abu dengan gradien hijau */
+        .backdrop-gradient {
+            background: linear-gradient(135deg, #e5e7eb 0%, #d1fae5 50%, #a7f3d0 100%);
+        }
+
+        /* Gaya custom untuk tombol submit */
+        .submit-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(52, 211, 153, 0.5), 0 4px 6px -2px rgba(52, 211, 153, 0.25);
+        }
+
+        /* Gaya untuk pesan error/modal */
+        .modal {
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="backdrop-gradient">
+
+    <!-- Container Utama -->
+    <div id="calculator-app" class="bg-white p-6 md:p-10 rounded-xl shadow-2xl w-full max-w-lg">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center border-b-2 border-green-400 pb-2">
+            PENGHITUNG TABUNGAN UANG KOIN
+        </h1>
+
+        <!-- Form Penghitung -->
+        <div id="coin-form" class="space-y-4">
+            <!-- Header Kolom -->
+            <div class="grid grid-cols-3 gap-2 text-sm md:text-base font-semibold text-gray-600 mb-3 border-b pb-2">
+                <div class="text-left">KOIN</div>
+                <div class="text-center">JUMLAH KEPING</div>
+                <div class="text-right">TOTAL GABUNGAN (Rp)</div>
+            </div>
+
+            <!-- Baris Input Koin -->
+            <div id="coin-list" class="space-y-4">
+                <script>
+                    const coinData = [
+                        { nominal: 100, multiplier: 100 },
+                        { nominal: 200, multiplier: 200 },
+                        { nominal: 500, multiplier: 500 }, // Perhitungan 500 x Keping
+                        { nominal: 1000, multiplier: 1000 }
+                    ];
+
+                    const coinList = document.getElementById('coin-list');
+                    coinData.forEach((coin, index) => {
+                        const row = document.createElement('div');
+                        row.className = 'grid grid-cols-3 gap-2 items-center';
+                        row.innerHTML = `
+                            <div class="text-lg font-medium text-gray-700">Rp ${coin.nominal}</div>
+                            <input
+                                type="number"
+                                id="input-${coin.nominal}"
+                                data-nominal="${coin.nominal}"
+                                data-multiplier="${coin.multiplier}"
+                                class="count-input w-full p-2 border border-gray-300 rounded-lg text-center focus:ring-green-500 focus:border-green-500 transition duration-150"
+                                placeholder="0"
+                                min="0"
+                                oninput="calculateRow(${coin.nominal})"
+                            />
+                            <input
+                                type="text"
+                                id="total-${coin.nominal}"
+                                class="total-output w-full p-2 border border-gray-300 bg-gray-100 rounded-lg text-right font-mono text-gray-800"
+                                value="0"
+                                readonly
+                            />
+                        `;
+                        coinList.appendChild(row);
+                    });
+
+                    function formatRupiah(number) {
+                        return new Intl.NumberFormat('id-ID').format(number);
+                    }
+
+                    // Fungsi untuk menghitung total gabungan per baris
+                    function calculateRow(nominal) {
+                        const inputElement = document.getElementById(`input-${nominal}`);
+                        const totalElement = document.getElementById(`total-${nominal}`);
+                        const multiplier = parseInt(inputElement.getAttribute('data-multiplier'));
+
+                        let count = parseInt(inputElement.value) || 0;
+
+                        // Pastikan input tidak negatif
+                        if (count < 0) {
+                            count = 0;
+                            inputElement.value = 0;
+                        }
+
+                        // Lakukan perhitungan sesuai kriteria
+                        const total = count * multiplier;
+
+                        // Tampilkan hasil di textbox total gabungan
+                        totalElement.value = formatRupiah(total);
+                    }
+
+                    // Fungsi utama untuk perhitungan total dan menampilkan popup
+                    function calculateTotal() {
+                        let grandTotal = 0;
+                        let hasError = false;
+                        const errorMessages = [];
+
+                        coinData.forEach(coin => {
+                            const inputElement = document.getElementById(`input-${coin.nominal}`);
+                            let count = parseInt(inputElement.value);
+
+                            // Validasi: Memastikan input minimal 1
+                            if (isNaN(count) || count < 1) {
+                                hasError = true;
+                                errorMessages.push(`Koin Rp ${coin.nominal}`);
+                            }
+
+                            // Lakukan perhitungan untuk grand total
+                            let countForCalc = isNaN(count) || count < 1 ? 0 : count;
+                            grandTotal += countForCalc * coin.multiplier;
+                        });
+
+                        const modalTitle = document.getElementById('modal-title');
+                        const modalBody = document.getElementById('modal-body');
+
+                        if (hasError) {
+                            // Tampilkan pesan error sesuai kriteria
+                            modalTitle.textContent = "KESALAHAN INPUT";
+                            modalBody.innerHTML = `
+                                <!-- Teks yang dihapus: MAAF SILAHKAN INPUT JUMLAH UANG KEPING DENGAN BENAR! -->
+                                <p class="text-sm text-gray-500">Kolom yang bermasalah: ${errorMessages.join(', ')}</p>
+                            `;
+                        } else {
+                            // HAPUS JUDUL POPUP UNTUK KASUS SUKSES
+                            modalTitle.textContent = ""; 
+                            modalBody.innerHTML = `
+                                <div class="text-center p-4 bg-green-50 rounded-lg shadow-inner">
+                                    <p class="text-xl text-gray-700">Total Uang Yang Dapat Ditukar</p>
+                                    <p class="text-5xl font-extrabold text-green-600 mt-2">
+                                        Rp ${formatRupiah(grandTotal)}
+                                    </p>
+                                </div>
+                            `;
+                        }
+
+                        // Tampilkan modal (popup)
+                        const modal = document.getElementById('result-modal');
+                        modal.classList.remove('opacity-0', 'invisible');
+                        modal.classList.add('opacity-100', 'visible');
+                    }
+
+                    // Fungsi baru untuk mereset semua input
+                    function resetInputs() {
+                        coinData.forEach(coin => {
+                            const inputElement = document.getElementById(`input-${coin.nominal}`);
+                            const totalElement = document.getElementById(`total-${coin.nominal}`);
+                            
+                            // Menghapus nilai input keping (mengaturnya ke string kosong)
+                            inputElement.value = ""; 
+                            
+                            // Mereset nilai total koin yang dihitung menjadi "0"
+                            totalElement.value = "0"; 
+                        });
+                        
+                        // Opsional: Tutup modal jika sedang terbuka
+                        closeModal();
+                    }
+
+                    // Fungsi untuk menutup modal
+                    function closeModal() {
+                        const modal = document.getElementById('result-modal');
+                        modal.classList.remove('opacity-100', 'visible');
+                        modal.classList.add('opacity-0', 'invisible');
+                    }
+                </script>
+            </div>
+
+            <!-- Tombol Aksi (HITUNG SEMUA & RESET) -->
+            <div class="flex space-x-4 mt-8">
+                <!-- Tombol HITUNG SEMUA -->
+                <button
+                    onclick="calculateTotal()"
+                    class="submit-button flex-1 py-4 bg-green-500 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-300"
+                >
+                    HITUNG SEMUA
+                </button>
+                
+                <!-- Tombol RESET -->
+                <button
+                    onclick="resetInputs()"
+                    class="flex-1 py-4 bg-gray-300 text-gray-800 font-bold text-lg rounded-xl shadow-lg hover:bg-gray-400 focus:outline-none focus:ring-4 focus:ring-gray-400 transition duration-150"
+                >
+                    RESET
+                </button>
+            </div>
+        </div>
+
+        <!-- Copyright -->
+        <p class="text-center text-xs text-gray-400 mt-6">
+            @COPYRIGHT 2025 - JMC v1.0
+        </p>
+    </div>
+
+    <!-- Modal (Popup) Hasil/Error -->
+    <div id="result-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 opacity-0 invisible z-50">
+        <div class="bg-white rounded-xl p-8 max-w-sm w-full shadow-2xl transform transition-all duration-300 scale-100">
+            <h2 id="modal-title" class="text-2xl font-bold text-center mb-4 text-gray-800"></h2>
+            <div id="modal-body" class="mb-6 text-center">
+                <!-- Isi akan dimuat oleh JavaScript -->
+            </div>
+            <button
+                onclick="closeModal()"
+                class="w-full py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition"
+            >
+                Tutup
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
