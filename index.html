@@ -133,7 +133,7 @@
                             let count = parseInt(inputElement.value);
 
                             // Validasi: Memastikan input minimal 1
-                            if (isNaN(count) || count < 1) {
+                            if (isNaN(count) || count < 0) {
                                 hasError = true;
                                 errorMessages.push(`Koin Rp ${coin.nominal}`);
                             }
